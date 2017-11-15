@@ -1,5 +1,7 @@
 package coflowsim;
 
+import coflowsim.datastructures.Link;
+import coflowsim.datastructures.Network;
 import coflowsim.simulators.CoflowSimulator;
 import coflowsim.simulators.CoflowSimulatorDark;
 import coflowsim.simulators.FlowSimulator;
@@ -10,6 +12,8 @@ import coflowsim.traceproducers.JobClassDescription;
 import coflowsim.traceproducers.TraceProducer;
 import coflowsim.utils.Constants;
 import coflowsim.utils.Constants.SHARING_ALGO;
+
+import java.util.List;
 
 public class CoflowSim {
 
@@ -106,7 +110,7 @@ public class CoflowSim {
         traceProducer = new CoflowBenchmarkTraceProducer(pathToCoflowBenchmarkTraceFile);
       }
     }
-    traceProducer.prepareTrace();
+//    traceProducer.prepareTrace();
 
     Simulator nlpl = null;
     if (sharingAlgo == SHARING_ALGO.FAIR || sharingAlgo == SHARING_ALGO.PFP) {
@@ -119,7 +123,13 @@ public class CoflowSim {
           deadlineMultRandomFactor);
     }
 
-    nlpl.simulate(simulationTimestep);
-    nlpl.printStats(true);
+//    nlpl.simulate(simulationTimestep);
+//    nlpl.printStats(true);
+
+    Network n = new Network(4, 1 );
+    List<Link> links = n.getLinks();
+    for(int i = 0; i < links.size(); i++){
+      System.out.println(links.get(i));
+    }
   }
 }
