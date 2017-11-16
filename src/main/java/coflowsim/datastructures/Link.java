@@ -6,37 +6,44 @@ package coflowsim.datastructures;
  */
 public class Link implements Comparable<Link> {
 
-    private String start;
-    private String end;
+	private String start;
+	private String end;
 
-    public Link(String start, String end) {
-        this.start = start;
-        this.end = end;
-    }
+	public Link(String start, String end) {
+		this.start = start;
+		this.end = end;
+	}
 
-    public String getStart() {
-        return this.start;
-    }
+	public String getStart() {
+		return this.start;
+	}
 
-    public String getEnd() {
-        return this.end;
-    }
+	public String getEnd() {
+		return this.end;
+	}
 
-    public int compareTo(Link o) {
-        if (this.getStart().equals(o.getStart()) &&
-                this.getEnd().equals(o.getEnd())) {
-            return 0;
-        } else {
-            return 1;
-        }
-    }
+	public int compareTo(Link o) {
+		if (this.getStart().equals(o.getStart()) &&
+						this.getEnd().equals(o.getEnd())) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
 
-    public Link getReverseLink() {
-        return new Link(this.end, this.start);
-    }
+	public Link getReverseLink() {
+		return new Link(this.end, this.start);
+	}
 
-    @Override
-    public String toString() {
-        return "Link: [" + start + "---->" + end + "]";
-    }
+	@Override
+	public boolean equals(Object obj) {
+		Link link = (Link) obj;
+		return link.getStart().equals(this.start) &&
+						link.getEnd().equals(this.end);
+	}
+
+	@Override
+	public String toString() {
+		return "Link: [" + start + "---->" + end + "]";
+	}
 }

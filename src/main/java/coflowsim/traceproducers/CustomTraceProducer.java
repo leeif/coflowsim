@@ -31,158 +31,156 @@ import coflowsim.utils.Utils;
  */
 public class CustomTraceProducer extends TraceProducer {
 
-  private final int NUM_RACKS;
-  private final int MACHINES_PER_RACK = 1;
+	private final int NUM_RACKS;
+	private final int MACHINES_PER_RACK = 1;
 
-  private final int REDUCER_ARRIVAL_TIME = 0;
+	private final int REDUCER_ARRIVAL_TIME = 0;
 
-  public int numJobs;
+	public int numJobs;
 
-  private final int numJobClasses;
-  private final JobClassDescription[] jobClass;
+	private final int numJobClasses;
+	private final JobClassDescription[] jobClass;
 
-  private final double sumFracs;
-  private final double[] fracsOfClasses;
+	private final double sumFracs;
+	private final double[] fracsOfClasses;
 
-  private final Random ranGen;
+	private final Random ranGen;
 
-  /**
-   * Constructor and input validator.
-   * 
-   * @param numRacks
-   *          Number of racks in the trace.
-   * @param numJobs
-   *          Number of jobs to create.
-   * @param jobClassDescs
-   *          Description of job classes ({@link coflowsim.traceproducers.JobClassDescription}).
-   * @param fracsOfClasses
-   *          Fractions of jobs from each job class.
-   * @param randomSeed
-   *          Random seed to use for all randomness inside.
-   */
-  public CustomTraceProducer(
-      int numRacks,
-      int numJobs,
-      JobClassDescription[] jobClassDescs,
-      double[] fracsOfClasses,
-      int randomSeed) {
+	/**
+	 * Constructor and input validator.
+	 *
+	 * @param numRacks       Number of racks in the trace.
+	 * @param numJobs        Number of jobs to create.
+	 * @param jobClassDescs  Description of job classes ({@link coflowsim.traceproducers.JobClassDescription}).
+	 * @param fracsOfClasses Fractions of jobs from each job class.
+	 * @param randomSeed     Random seed to use for all randomness inside.
+	 */
+	public CustomTraceProducer(
+					int numRacks,
+					int numJobs,
+					JobClassDescription[] jobClassDescs,
+					double[] fracsOfClasses,
+					int randomSeed) {
 
-    ranGen = new Random(randomSeed);
+		ranGen = new Random(randomSeed);
 
-    this.NUM_RACKS = numRacks;
-    this.numJobs = numJobs;
+		this.NUM_RACKS = numRacks;
+		this.numJobs = numJobs;
 
-    this.numJobClasses = jobClassDescs.length;
-    this.jobClass = jobClassDescs;
-    this.fracsOfClasses = fracsOfClasses;
-    this.sumFracs = Utils.sum(fracsOfClasses);
+		this.numJobClasses = jobClassDescs.length;
+		this.jobClass = jobClassDescs;
+		this.fracsOfClasses = fracsOfClasses;
+		this.sumFracs = Utils.sum(fracsOfClasses);
 
-    // Check input validity
-    assert (jobClassDescs.length == numJobClasses);
-    assert (fracsOfClasses.length == numJobClasses);
-  }
+		// Check input validity
+		assert (jobClassDescs.length == numJobClasses);
+		assert (fracsOfClasses.length == numJobClasses);
+	}
 
-  /**
-   * Actually generates the random trace.
-   */
-  @Override
-  public void prepareTrace() {
+	/**
+	 * Actually generates the random trace.
+	 */
+	@Override
+	public void prepareTrace() {
 
-    // Create the tasks
-    int jID = 0;
-    for (int i = 0; i < numJobClasses; i++) {
+		// Create the tasks
+		int jID = 0;
+		for (int i = 0; i < numJobClasses; i++) {
 
-      int numJobsInClass = (int) (1.0 * numJobs * fracsOfClasses[i] / sumFracs);
+			int numJobsInClass = (int) (1.0 * numJobs * fracsOfClasses[i] / sumFracs);
 
-      while (numJobsInClass-- > 0) {
-        // Find corresponding job
-        String jobName = "JOB-" + jID;
-        jID++;
-        Job job = jobs.getOrAddJob(jobName);
+			while (numJobsInClass-- > 0) {
+				// Find corresponding job
+				String jobName = "JOB-" + jID;
+				jID++;
+				Job job = jobs.getOrAddJob(jobName);
 
-        // #region: Create mappers
-        int numMappers = ranGen.nextInt(jobClass[i].maxWidth - jobClass[i].minWidth + 1)
-            + jobClass[i].minWidth;
+				// #region: Create mappers
+				int numMappers = ranGen.nextInt(jobClass[i].maxWidth - jobClass[i].minWidth + 1)
+								+ jobClass[i].minWidth;
 
-        boolean[] rackChosen = new boolean[NUM_RACKS];
-        Arrays.fill(rackChosen, false);
-        for (int mID = 0; mID < numMappers; mID++) {
-          String taskName = "MAPPER-" + mID;
-          int taskID = mID;
+				boolean[] rackChosen = new boolean[NUM_RACKS];
+				Arrays.fill(rackChosen, false);
+				for (int mID = 0; mID < numMappers; mID++) {
+					String taskName = "MAPPER-" + mID;
+					int taskID = mID;
 
-          // Create map task
-          Task task = new MapTask(taskName, taskID, job, Constants.VALUE_IGNORED,
-              Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen)));
+					// Create map task
+					Task task = new MapTask(taskName, taskID, job, Constants.VALUE_IGNORED,
+									Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen)));
 
-          // Add task to corresponding job
-          job.addTask(task);
-        }
-        // #endregion
+					// Add task to corresponding job
+					job.addTask(task);
+				}
+				// #endregion
 
-        // #region: Create reducers
-        int numReducers = ranGen.nextInt(jobClass[i].maxWidth - jobClass[i].minWidth + 1)
-            + jobClass[i].minWidth;
+				// #region: Create reducers
+				int numReducers = ranGen.nextInt(jobClass[i].maxWidth - jobClass[i].minWidth + 1)
+								+ jobClass[i].minWidth;
 
-        // Mark racks so that there is at most one reducer per rack
-        rackChosen = new boolean[NUM_RACKS];
-        Arrays.fill(rackChosen, false);
-        for (int rID = 0; rID < numReducers; rID++) {
-          int numMB = ranGen.nextInt(jobClass[i].maxLength - jobClass[i].minLength + 1)
-              + jobClass[i].minLength;
+				// Mark racks so that there is at most one reducer per rack
+				rackChosen = new boolean[NUM_RACKS];
+				Arrays.fill(rackChosen, false);
+				for (int rID = 0; rID < numReducers; rID++) {
+					int numMB = ranGen.nextInt(jobClass[i].maxLength - jobClass[i].minLength + 1)
+									+ jobClass[i].minLength;
 
-          double shuffleBytes = numMB * 1048576.0;
+					double shuffleBytes = numMB * 1048576.0;
 
-          // shuffleBytes for each mapper
-          shuffleBytes *= numMappers;
+					// shuffleBytes for each mapper
+					shuffleBytes *= numMappers;
 
-          String taskName = "REDUCER-" + rID;
-          int taskID = rID;
+					String taskName = "REDUCER-" + rID;
+					int taskID = rID;
 
-          // Create reduce task
-          Task task = new ReduceTask(taskName, taskID, job, REDUCER_ARRIVAL_TIME,
-              Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen)), shuffleBytes,
-              Constants.VALUE_IGNORED);
+					// Create reduce task
+					Task task = new ReduceTask(taskName, taskID, job, REDUCER_ARRIVAL_TIME,
+									Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen)), shuffleBytes,
+									Constants.VALUE_IGNORED);
 
-          // Add task to corresponding job
-          job.addTask(task);
-        }
-        // #endregion
-      }
-    }
-  }
+					// Add task to corresponding job
+					job.addTask(task);
+				}
+				// #endregion
+			}
+		}
+	}
 
-  /**
-   * Selects a rack that has no tasks, returns its index, and updates bookkeeping.
-   * <p>
-   * Because CustomTraceProducer essentially has one machine per rack, selecting rack is equivalent
-   * to selecting a machine.
-   * 
-   * @param racksAlreadyChosen
-   *          keeps track of racks that have already been used.
-   * @return the selected rack's index
-   */
-  private int selectMachine(boolean[] racksAlreadyChosen) {
-    int rackIndex = -1;
-    while (rackIndex == -1) {
-      rackIndex = ranGen.nextInt(NUM_RACKS);
-      if (racksAlreadyChosen[rackIndex]) {
-        rackIndex = -1;
-      }
-    }
-    racksAlreadyChosen[rackIndex] = true;
-    // 1 <= rackIndex <= NUM_RACKS
-    return rackIndex + 1;
-  }
+	/**
+	 * Selects a rack that has no tasks, returns its index, and updates bookkeeping.
+	 * <p>
+	 * Because CustomTraceProducer essentially has one machine per rack, selecting rack is equivalent
+	 * to selecting a machine.
+	 *
+	 * @param racksAlreadyChosen keeps track of racks that have already been used.
+	 * @return the selected rack's index
+	 */
+	private int selectMachine(boolean[] racksAlreadyChosen) {
+		int rackIndex = -1;
+		while (rackIndex == -1) {
+			rackIndex = ranGen.nextInt(NUM_RACKS);
+			if (racksAlreadyChosen[rackIndex]) {
+				rackIndex = -1;
+			}
+		}
+		racksAlreadyChosen[rackIndex] = true;
+		// 1 <= rackIndex <= NUM_RACKS
+		return rackIndex + 1;
+	}
 
-  /** {@inheritDoc} */
-  @Override
-  public int getNumRacks() {
-    return NUM_RACKS;
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int getNumRacks() {
+		return NUM_RACKS;
+	}
 
-  /** {@inheritDoc} */
-  @Override
-  public int getMachinesPerRack() {
-    return MACHINES_PER_RACK;
-  }
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int getMachinesPerRack() {
+		return MACHINES_PER_RACK;
+	}
 }
