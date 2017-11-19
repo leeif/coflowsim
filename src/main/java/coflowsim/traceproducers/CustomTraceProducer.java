@@ -3,11 +3,7 @@ package coflowsim.traceproducers;
 import java.util.Arrays;
 import java.util.Random;
 
-import coflowsim.datastructures.Job;
-import coflowsim.datastructures.Machine;
-import coflowsim.datastructures.MapTask;
-import coflowsim.datastructures.ReduceTask;
-import coflowsim.datastructures.Task;
+import coflowsim.datastructures.*;
 import coflowsim.utils.Constants;
 import coflowsim.utils.Utils;
 
@@ -32,7 +28,7 @@ import coflowsim.utils.Utils;
 public class CustomTraceProducer extends TraceProducer {
 
 	private final int NUM_RACKS;
-	private final int MACHINES_PER_RACK = 1;
+	private final int MACHINES_PER_RACK;
 
 	private final int REDUCER_ARRIVAL_TIME = 0;
 
@@ -44,6 +40,8 @@ public class CustomTraceProducer extends TraceProducer {
 	private final double sumFracs;
 	private final double[] fracsOfClasses;
 
+	private Network network;
+
 	private final Random ranGen;
 
 	/**
@@ -54,23 +52,28 @@ public class CustomTraceProducer extends TraceProducer {
 	 * @param jobClassDescs  Description of job classes ({@link coflowsim.traceproducers.JobClassDescription}).
 	 * @param fracsOfClasses Fractions of jobs from each job class.
 	 * @param randomSeed     Random seed to use for all randomness inside.
+	 * @param network 			 Network Topology Instance
 	 */
 	public CustomTraceProducer(
 					int numRacks,
 					int numJobs,
 					JobClassDescription[] jobClassDescs,
 					double[] fracsOfClasses,
-					int randomSeed) {
+					int randomSeed,
+					Network network) {
 
 		ranGen = new Random(randomSeed);
 
-		this.NUM_RACKS = numRacks;
 		this.numJobs = numJobs;
 
 		this.numJobClasses = jobClassDescs.length;
 		this.jobClass = jobClassDescs;
 		this.fracsOfClasses = fracsOfClasses;
 		this.sumFracs = Utils.sum(fracsOfClasses);
+		this.network = network;
+		this.NUM_RACKS = numRacks;
+		this.MACHINES_PER_RACK = network.getPods().get(0).size();
+		System.out.println(NUM_RACKS + "  " + MACHINES_PER_RACK);
 
 		// Check input validity
 		assert (jobClassDescs.length == numJobClasses);
@@ -99,6 +102,7 @@ public class CustomTraceProducer extends TraceProducer {
 				int numMappers = ranGen.nextInt(jobClass[i].maxWidth - jobClass[i].minWidth + 1)
 								+ jobClass[i].minWidth;
 
+				// choose pod
 				boolean[] rackChosen = new boolean[NUM_RACKS];
 				Arrays.fill(rackChosen, false);
 				for (int mID = 0; mID < numMappers; mID++) {
@@ -106,8 +110,10 @@ public class CustomTraceProducer extends TraceProducer {
 					int taskID = mID;
 
 					// Create map task
+					// map machine index
+					int mmIndex = ranGen.nextInt(MACHINES_PER_RACK);
 					Task task = new MapTask(taskName, taskID, job, Constants.VALUE_IGNORED,
-									Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen)));
+									Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen, mmIndex)));
 
 					// Add task to corresponding job
 					job.addTask(task);
@@ -134,8 +140,10 @@ public class CustomTraceProducer extends TraceProducer {
 					int taskID = rID;
 
 					// Create reduce task
+					// Machine index in rack (pod)
+					int rmIndex = ranGen.nextInt(MACHINES_PER_RACK);
 					Task task = new ReduceTask(taskName, taskID, job, REDUCER_ARRIVAL_TIME,
-									Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen)), shuffleBytes,
+									Constants.VALUE_IGNORED, new Machine(selectMachine(rackChosen, rmIndex)), shuffleBytes,
 									Constants.VALUE_IGNORED);
 
 					// Add task to corresponding job
@@ -155,7 +163,7 @@ public class CustomTraceProducer extends TraceProducer {
 	 * @param racksAlreadyChosen keeps track of racks that have already been used.
 	 * @return the selected rack's index
 	 */
-	private int selectMachine(boolean[] racksAlreadyChosen) {
+	private int selectMachine(boolean[] racksAlreadyChosen, int mIndex) {
 		int rackIndex = -1;
 		while (rackIndex == -1) {
 			rackIndex = ranGen.nextInt(NUM_RACKS);
@@ -164,8 +172,9 @@ public class CustomTraceProducer extends TraceProducer {
 			}
 		}
 		racksAlreadyChosen[rackIndex] = true;
-		// 1 <= rackIndex <= NUM_RACKS
-		return rackIndex + 1;
+		// 0 <= rackIndex < NUM_RACKS
+//		System.out.println(rackIndex * MACHINES_PER_RACK +  mIndex);
+		return rackIndex * MACHINES_PER_RACK +  mIndex;
 	}
 
 	/**

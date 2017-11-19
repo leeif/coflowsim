@@ -1,7 +1,6 @@
 package coflowsim;
 
-import coflowsim.datastructures.Link;
-import coflowsim.datastructures.Network;
+import coflowsim.datastructures.*;
 import coflowsim.simulators.CoflowSimulator;
 import coflowsim.simulators.CoflowSimulatorDark;
 import coflowsim.simulators.FlowSimulator;
@@ -59,11 +58,17 @@ public class CoflowSim {
 			deadlineMultRandomFactor = Double.parseDouble(args[curArg++]);
 		}
 
+		//Create Network Topology
+		Network network = new Network(10, Constants.RACK_BITS_PER_SEC);
+
 		// Create TraceProducer
 		TraceProducer traceProducer = null;
 
-		int numRacks = 100;
-		int numJobs = 10;
+		int numRacks = network.getPods().size();
+		int numJobs = 20;
+		// random seed
+//		int randomSeed = (int)System.currentTimeMillis() / 1000;
+		// constant seed
 		int randomSeed = 13;
 		JobClassDescription[] jobClassDescs = new JobClassDescription[]{
 						new JobClassDescription(1, 5, 1, 10),
@@ -77,7 +82,7 @@ public class CoflowSim {
 						21};
 
 		traceProducer = new CustomTraceProducer(numRacks, numJobs, jobClassDescs, fracsOfClasses,
-						randomSeed);
+						randomSeed, network);
 
 		if (args.length > curArg) {
 			String UPPER_ARG = args[curArg++].toUpperCase();
@@ -105,13 +110,13 @@ public class CoflowSim {
 				randomSeed = Integer.parseInt(args[curArg++]);
 
 				traceProducer = new CustomTraceProducer(numRacks, numJobs, jobClassDescs, fracsOfClasses,
-								randomSeed);
+								randomSeed, network);
 			} else if (UPPER_ARG.equals("COFLOW-BENCHMARK")) {
 				String pathToCoflowBenchmarkTraceFile = args[curArg++];
 				traceProducer = new CoflowBenchmarkTraceProducer(pathToCoflowBenchmarkTraceFile);
 			}
 		}
-//    traceProducer.prepareTrace();
+    traceProducer.prepareTrace();
 
 		Simulator nlpl = null;
 		if (sharingAlgo == SHARING_ALGO.FAIR || sharingAlgo == SHARING_ALGO.PFP) {
@@ -124,13 +129,27 @@ public class CoflowSim {
 							deadlineMultRandomFactor);
 		}
 
-//    nlpl.simulate(simulationTimestep);
-//    nlpl.printStats(true);
+    nlpl.simulate(simulationTimestep);
+    nlpl.printStats(true);
 
-		Network n = new Network(4, 1);
-		ArrayList<ArrayList<Link>> paths = n.getPaths().get(n.getOds().get(0));
-		for (int i = 0; i < paths.size(); i++) {
-			System.out.println(paths.get(i));
-		}
+//		ArrayList<ArrayList<String>> pods = network.getPods();
+//		ODPair o = new ODPair(0, 1);
+//		ArrayList<ArrayList<Link>> paths = network.getPaths(o);
+//		for (int i = 0; i < paths.size(); i++) {
+//			System.out.println(paths.get(i));
+//		}
+//
+//		for(int i = 0; i < traceProducer.jobs.size(); i++) {
+//			Job j = traceProducer.jobs.elementAt(i);
+//			System.out.println("-----------" + j.jobName + "------------");
+//			for(Task task : j.tasks) {
+//				if(task.taskType == Task.TaskType.MAPPER) {
+//					System.out.println("Mapper : " + task.getPlacement());
+//				} else {
+//					System.out.println("Reduce : " + task.getPlacement());
+//				}
+//			}
+//			System.out.println("-----------------------");
+//		}
 	}
 }

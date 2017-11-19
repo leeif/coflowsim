@@ -14,8 +14,8 @@ import java.util.Map;
  */
 public class Network {
 
-	private int k_ary;
-	private int total_bandwidth;
+	public int k_ary;
+	private Double total_bandwidth;
 	private ArrayList<String> servers;
 	private ArrayList<ArrayList<String>> pods;
 	private ArrayList<String> edge;
@@ -23,19 +23,19 @@ public class Network {
 	private ArrayList<String> core;
 	private ArrayList<Link> links;
 	private ArrayList<ODPair> ods;
-	private Map<ODPair, ArrayList<ArrayList<Link>>> paths;
-	private Map<Link, Integer> linkBandwidth;
+	private Map<ODPair, ArrayList<ArrayList<Link>>> paths = new HashMap<ODPair, ArrayList<ArrayList<Link>>>();
+	private Map<Link, Double> linkBandwidth;
 
 
 	/**
 	 * @param k_ary
 	 */
-	public Network(int k_ary, int bandwidth) {
+	public Network(int k_ary, Double bandwidth) {
 		this.k_ary = k_ary;
 		this.total_bandwidth = bandwidth;
 		this.createTopology();
 		this.initBandWidth();
-		this.createPaths();
+//		this.createPaths();
 	}
 
 
@@ -101,7 +101,7 @@ public class Network {
 	}
 
 	public void initBandWidth() {
-		linkBandwidth = new HashMap<Link, Integer>();
+		linkBandwidth = new HashMap<Link, Double>();
 		for (int i = 0; i < links.size(); i++) {
 			linkBandwidth.put(links.get(i), total_bandwidth);
 		}
@@ -109,62 +109,72 @@ public class Network {
 
 
 	//assume that source and destination are in different pod
-	public void createPaths() {
-		paths = new HashMap<ODPair, ArrayList<ArrayList<Link>>>();
-		ods = new ArrayList<ODPair>();
-		for (int i = 0; i < pods.size(); i++) {
-			for (int j = 0; j < pods.size(); j++) {
-				if (i != j) {
-					for (int m = 0; m < pods.get(i).size(); m++) {
-						for (int n = 0; n < pods.get(j).size(); n++) {
-							ODPair o = new ODPair(pods.get(i).get(m),
-											pods.get(j).get(n));
-							ods.add(o);
-							createPaths(o, i, j, m / (k_ary / 2), n / (k_ary / 2));
-						}
-					}
-				}
-			}
-		}
-	}
+//	public void createPaths() {
+//		paths = new HashMap<ODPair, ArrayList<ArrayList<Link>>>();
+//		ods = new ArrayList<ODPair>();
+//		for (int i = 0; i < pods.size(); i++) {
+//			for (int j = 0; j < pods.size(); j++) {
+//				if (i != j) {
+//					for (int m = 0; m < pods.get(i).size(); m++) {
+//						for (int n = 0; n < pods.get(j).size(); n++) {
+//							ODPair o = new ODPair(pods.get(i).get(m),
+//											pods.get(j).get(n));
+//							ods.add(o);
+//							createPaths(o, i, j, m / (k_ary / 2), n / (k_ary / 2));
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
 
-	private void createPaths(ODPair o, int sourcePod, int desPod,
-													 int sourceEdge, int desEdge) {
+	public ArrayList<ArrayList<Link>> createPaths(ODPair o) {
 
 		ArrayList<ArrayList<Link>> ps = new ArrayList<ArrayList<Link>>();
 
 		for (int i = 0; i < core.size(); i++) {
 			ArrayList<Link> p = new ArrayList<Link>();
 			String c = core.get(i);
-			int aggreUp = i / (k_ary / 2) + sourcePod * (k_ary / 2);
-			int aggreDown = i / (k_ary / 2) + desPod * (k_ary / 2);
-			int edgeUp = sourcePod * (k_ary / 2) + sourceEdge;
-			int edgeDown = desPod * (k_ary / 2) + desEdge;
+			int aggreUp = i / (k_ary / 2) + o.getSourcePod() * (k_ary / 2);
+			int aggreDown = i / (k_ary / 2) + o.getDesPod() * (k_ary / 2);
 //			System.out.println(edgeUp + "-" + aggreUp + "-" + aggreDown + "-" + edgeDown);
-			Link eu = links.get(links.indexOf(new Link("edge_" + edgeUp, "aggregation_" + aggreUp)));
 			Link au = links.get(links.indexOf(new Link("aggregation_" + aggreUp, c)));
 			Link ad = links.get(links.indexOf(new Link(c, "aggregation_" + aggreDown)));
-			Link ed = links.get(links.indexOf(new Link("aggregation_" + aggreDown, "edge_" + edgeDown)));
-			p.add(eu);
 			p.add(au);
 			p.add(ad);
-			p.add(ed);
 			ps.add(p);
 		}
 
 		paths.put(o, ps);
+		return ps;
 	}
 
 
+	public ArrayList<ArrayList<Link>> getPaths(ODPair o) {
+		if(paths.containsKey(o)) {
+			return paths.get(o);
+		} else {
+			return createPaths(o);
+		}
+	}
+
 	public Map<ODPair, ArrayList<ArrayList<Link>>> getPaths() {
 		return this.paths;
+	}
+
+	public ArrayList<ArrayList<String>> getPods() {
+		return this.pods;
+	}
+
+	public ArrayList<String> getEdge() {
+		return this.edge;
 	}
 
 	public ArrayList<ODPair> getOds() {
 		return this.ods;
 	}
 
-	public int getBandwidth(Link link) {
+	public Double getBandwidth(Link link) {
 		return this.linkBandwidth.get(link);
 	}
 

@@ -2,38 +2,41 @@ package coflowsim.datastructures;
 
 
 /**
- * Created by lee on 2017/11/15.
+ * ODPair in level of Pod
  */
 public class ODPair implements Comparable<ODPair> {
 
-	private String source;
-	private String destination;
+	private int sourcePod;
+	private int desPod;
 
 
-	public ODPair(String source, String destination) {
-		this.source = source;
-		this.destination = destination;
+	/**
+	 *
+	 * @param sourcePod
+	 * @param desPod
+	 */
+	public ODPair(int sourcePod, int desPod) {
+		this.sourcePod = sourcePod;
+		this.desPod = desPod;
 	}
 
-
-	public String getSource() {
-		return this.source;
+	public int getSourcePod() {
+		return sourcePod;
 	}
 
-	public String getDestination() {
-		return this.destination;
+	public int getDesPod() {
+		return desPod;
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {
 		ODPair od = (ODPair) obj;
-		return od.getSource().equals(this.source) &&
-						od.getDestination().equals(this.destination);
+		return od.getSourcePod() == this.sourcePod &&
+						od.getDesPod() == this.desPod;
 	}
 
 	public int compareTo(ODPair o) {
-		if (source.equals(o.source) && destination.equals(o.destination)) {
+		if (sourcePod == o.getSourcePod() && desPod == o.getDesPod()) {
 			return 0;
 		} else {
 			return 1;

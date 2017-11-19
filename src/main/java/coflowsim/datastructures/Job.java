@@ -300,7 +300,7 @@ public class Job implements Comparable<Job> {
         numReducers++;
 
         ReduceTask iThRt = new ReduceTask("JOB-" + jobID + "-REDUCE-" + i, i, this, actualStartTime,
-            Constants.VALUE_UNKNOWN, new Machine(i + 1), 0, Constants.VALUE_UNKNOWN);
+            Constants.VALUE_UNKNOWN, new Machine(i), 0, Constants.VALUE_UNKNOWN);
 
         // Update shuffle counters in task
         for (ReduceTask rt : tasksInRacks[i]) {
@@ -364,8 +364,8 @@ public class Job implements Comparable<Job> {
   }
 
   private int convertMachineToRack(int machine, int machinesPerRack) {
-    // Subtracting because machine IDs start from 1
-    return (machine - 1) / machinesPerRack;
+    // Machine IDs start from 0
+    return machine / machinesPerRack;
   }
 
   /**

@@ -1,5 +1,7 @@
 package coflowsim.datastructures;
 
+import java.util.ArrayList;
+
 /**
  * Information of each mapper.
  * Mostly unused by our {@link coflowsim.simulators.Simulator} except for mapper location.
