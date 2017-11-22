@@ -110,9 +110,6 @@ public class ECMPSimulator extends Simulator {
 	@Override
 	protected void afterJobAdmission(long curTime) {
 		super.afterJobAdmission(curTime);
-		for(Vector<Flow> flows : flowsInPathOfRacks[0]) {
-			System.out.println(flows.size());
-		}
 	}
 
 	/**

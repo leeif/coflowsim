@@ -111,9 +111,6 @@ public class HederaSimulator extends Simulator {
 				}
 			}
 		}
-		for(Vector<Flow> flows : flowsInPathOfRacks[0]) {
-			System.out.println(flows.size());
-		}
 	}
 
 	/**

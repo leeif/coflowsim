@@ -16,7 +16,7 @@ public class CoflowSim {
 		int curArg = 0;
 
 		SHARING_ALGO sharingAlgo = SHARING_ALGO.FAIR;
-		ROUTING_ALGO routingAlgo = ROUTING_ALGO.NONE;
+		ROUTING_ALGO routingAlgo = ROUTING_ALGO.HEDERA;
 		if (args.length > curArg) {
 			String UPPER_ARG = args[curArg++].toUpperCase();
 
@@ -63,7 +63,7 @@ public class CoflowSim {
 		int numRacks = network.getPods().size();
 		int numJobs = 30;
 		// random seed
-		int randomSeed = (int)System.currentTimeMillis() / 1000;
+		int randomSeed = (int) System.currentTimeMillis() / 1000;
 		// constant seed
 //		int randomSeed = 13;
 		JobClassDescription[] jobClassDescs = new JobClassDescription[]{
@@ -120,6 +120,9 @@ public class CoflowSim {
 							deadlineMultRandomFactor, network);
 		} else if (routingAlgo == ROUTING_ALGO.HEDERA) {
 			nlpl = new HederaSimulator(null, traceProducer, isOffline, considerDeadline,
+							deadlineMultRandomFactor, network);
+		} else if (routingAlgo == ROUTING_ALGO.RAPIER) {
+			nlpl = new RapierSimulator(null, traceProducer, isOffline, considerDeadline,
 							deadlineMultRandomFactor, network);
 		} else if (sharingAlgo == SHARING_ALGO.FAIR || sharingAlgo == SHARING_ALGO.PFP) {
 			nlpl = new FlowSimulator(sharingAlgo, traceProducer, isOffline, considerDeadline,
