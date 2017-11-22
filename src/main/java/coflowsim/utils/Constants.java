@@ -50,7 +50,7 @@ public class Constants {
     ECMP,
     HEDERA,
     RAPIER,
-    OURS,
+    SA,
   }
 
   /**

@@ -89,16 +89,6 @@ public class CoflowRoutingSimulator extends Simulator {
 					}
 				}
 			}
-
-			// 2. Choose The Path Beside on Routing Algorithm
-			if (routingAlgo == Constants.ROUTING_ALGO.ECMP) {
-			} else if (routingAlgo == Constants.ROUTING_ALGO.HEDERA) {
-
-			} else if (routingAlgo == Constants.ROUTING_ALGO.RAPIER) {
-
-			} else if (routingAlgo == Constants.ROUTING_ALGO.OURS) {
-
-			}
 		}
 	}
 

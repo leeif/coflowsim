@@ -16,7 +16,7 @@ public class CoflowSim {
 		int curArg = 0;
 
 		SHARING_ALGO sharingAlgo = SHARING_ALGO.FAIR;
-		ROUTING_ALGO routingAlgo = ROUTING_ALGO.HEDERA;
+		ROUTING_ALGO routingAlgo = ROUTING_ALGO.ECMP;
 		if (args.length > curArg) {
 			String UPPER_ARG = args[curArg++].toUpperCase();
 
@@ -36,6 +36,14 @@ public class CoflowSim {
 				sharingAlgo = SHARING_ALGO.SEBF;
 			} else if (UPPER_ARG.contains("DARK")) {
 				sharingAlgo = SHARING_ALGO.DARK;
+			} else if (UPPER_ARG.contains("ECMP")) {
+				routingAlgo = ROUTING_ALGO.ECMP;
+			} else if (UPPER_ARG.contains("HEDERA")) {
+				routingAlgo = ROUTING_ALGO.HEDERA;
+			} else if (UPPER_ARG.contains("RAPIER")) {
+				routingAlgo = ROUTING_ALGO.RAPIER;
+			} else if (UPPER_ARG.contains("SA")) {
+				routingAlgo = ROUTING_ALGO.SA;
 			} else {
 				System.err.println("Unsupported or Wrong Sharing Algorithm");
 				System.exit(1);
