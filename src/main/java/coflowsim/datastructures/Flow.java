@@ -7,15 +7,25 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Flow implements Comparable<Flow> {
   static AtomicInteger nextId = new AtomicInteger();
-  private int id;
+  public int id;
 
   public final MapTask mapper;
   public final ReduceTask reducer;
   private final double totalBytes;
 
+  public String path;
+
   public double bytesRemaining;
   public double currentBps;
   public boolean consideredAlready;
+
+  //Hedera Variable
+
+  //Hedera Algorithm Estimate Demand in fraction
+
+  public double demand;
+  public boolean converged;
+  public boolean rl;
 
   /**
    * Constructor for Flow.
@@ -37,6 +47,10 @@ public class Flow implements Comparable<Flow> {
     this.bytesRemaining = totalBytes;
     this.currentBps = 0.0;
     this.consideredAlready = false;
+
+    //Hedera
+    this.demand = 0.0;
+    this.converged = false;
   }
 
   /**

@@ -1,19 +1,14 @@
 package coflowsim;
 
 import coflowsim.datastructures.*;
-import coflowsim.simulators.CoflowSimulator;
-import coflowsim.simulators.CoflowSimulatorDark;
-import coflowsim.simulators.FlowSimulator;
-import coflowsim.simulators.Simulator;
+import coflowsim.simulators.*;
 import coflowsim.traceproducers.CoflowBenchmarkTraceProducer;
 import coflowsim.traceproducers.CustomTraceProducer;
 import coflowsim.traceproducers.JobClassDescription;
 import coflowsim.traceproducers.TraceProducer;
 import coflowsim.utils.Constants;
 import coflowsim.utils.Constants.SHARING_ALGO;
-
-import java.util.ArrayList;
-import java.util.List;
+import coflowsim.utils.Constants.ROUTING_ALGO;
 
 public class CoflowSim {
 
@@ -21,6 +16,7 @@ public class CoflowSim {
 		int curArg = 0;
 
 		SHARING_ALGO sharingAlgo = SHARING_ALGO.FAIR;
+		ROUTING_ALGO routingAlgo = ROUTING_ALGO.NONE;
 		if (args.length > curArg) {
 			String UPPER_ARG = args[curArg++].toUpperCase();
 
@@ -65,11 +61,11 @@ public class CoflowSim {
 		TraceProducer traceProducer = null;
 
 		int numRacks = network.getPods().size();
-		int numJobs = 20;
+		int numJobs = 30;
 		// random seed
-//		int randomSeed = (int)System.currentTimeMillis() / 1000;
+		int randomSeed = (int)System.currentTimeMillis() / 1000;
 		// constant seed
-		int randomSeed = 13;
+//		int randomSeed = 13;
 		JobClassDescription[] jobClassDescs = new JobClassDescription[]{
 						new JobClassDescription(1, 5, 1, 10),
 						new JobClassDescription(1, 5, 10, 1000),
@@ -116,10 +112,16 @@ public class CoflowSim {
 				traceProducer = new CoflowBenchmarkTraceProducer(pathToCoflowBenchmarkTraceFile);
 			}
 		}
-    traceProducer.prepareTrace();
+		traceProducer.prepareTrace();
 
 		Simulator nlpl = null;
-		if (sharingAlgo == SHARING_ALGO.FAIR || sharingAlgo == SHARING_ALGO.PFP) {
+		if (routingAlgo == ROUTING_ALGO.ECMP) {
+			nlpl = new ECMPSimulator(null, traceProducer, isOffline, considerDeadline,
+							deadlineMultRandomFactor, network);
+		} else if (routingAlgo == ROUTING_ALGO.HEDERA) {
+			nlpl = new HederaSimulator(null, traceProducer, isOffline, considerDeadline,
+							deadlineMultRandomFactor, network);
+		} else if (sharingAlgo == SHARING_ALGO.FAIR || sharingAlgo == SHARING_ALGO.PFP) {
 			nlpl = new FlowSimulator(sharingAlgo, traceProducer, isOffline, considerDeadline,
 							deadlineMultRandomFactor);
 		} else if (sharingAlgo == SHARING_ALGO.DARK) {
@@ -129,8 +131,8 @@ public class CoflowSim {
 							deadlineMultRandomFactor);
 		}
 
-    nlpl.simulate(simulationTimestep);
-    nlpl.printStats(true);
+		nlpl.simulate(simulationTimestep);
+		nlpl.printStats(true);
 
 //		ArrayList<ArrayList<String>> pods = network.getPods();
 //		ODPair o = new ODPair(0, 1);

@@ -1,5 +1,6 @@
 package coflowsim.datastructures;
 
+import java.awt.image.AreaAveragingScaleFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,8 @@ import java.util.Map;
 public class Network {
 
 	public int k_ary;
+	public Map<Link, Double> linkFreeBandwidth;
+
 	private Double total_bandwidth;
 	private ArrayList<String> servers;
 	private ArrayList<ArrayList<String>> pods;
@@ -22,9 +25,7 @@ public class Network {
 	private ArrayList<String> aggregation;
 	private ArrayList<String> core;
 	private ArrayList<Link> links;
-	private ArrayList<ODPair> ods;
-	private Map<ODPair, ArrayList<ArrayList<Link>>> paths = new HashMap<ODPair, ArrayList<ArrayList<Link>>>();
-	private Map<Link, Double> linkBandwidth;
+	private Map<String, ArrayList<ArrayList<Link>>> paths = new HashMap<String, ArrayList<ArrayList<Link>>>();
 
 
 	/**
@@ -34,7 +35,7 @@ public class Network {
 		this.k_ary = k_ary;
 		this.total_bandwidth = bandwidth;
 		this.createTopology();
-		this.initBandWidth();
+		this.resetBandWidthForLink();
 //		this.createPaths();
 	}
 
@@ -100,10 +101,10 @@ public class Network {
 		}
 	}
 
-	public void initBandWidth() {
-		linkBandwidth = new HashMap<Link, Double>();
+	public void resetBandWidthForLink() {
+		linkFreeBandwidth = new HashMap<Link, Double>();
 		for (int i = 0; i < links.size(); i++) {
-			linkBandwidth.put(links.get(i), total_bandwidth);
+			linkFreeBandwidth.put(links.get(i), total_bandwidth);
 		}
 	}
 
@@ -128,15 +129,17 @@ public class Network {
 //		}
 //	}
 
-	public ArrayList<ArrayList<Link>> createPaths(ODPair o) {
+	public ArrayList<ArrayList<Link>> createPaths(int source, int des) {
 
 		ArrayList<ArrayList<Link>> ps = new ArrayList<ArrayList<Link>>();
+
+		String od = source + "-" + des;
 
 		for (int i = 0; i < core.size(); i++) {
 			ArrayList<Link> p = new ArrayList<Link>();
 			String c = core.get(i);
-			int aggreUp = i / (k_ary / 2) + o.getSourcePod() * (k_ary / 2);
-			int aggreDown = i / (k_ary / 2) + o.getDesPod() * (k_ary / 2);
+			int aggreUp = i / (k_ary / 2) + source * (k_ary / 2);
+			int aggreDown = i / (k_ary / 2) + des * (k_ary / 2);
 //			System.out.println(edgeUp + "-" + aggreUp + "-" + aggreDown + "-" + edgeDown);
 			Link au = links.get(links.indexOf(new Link("aggregation_" + aggreUp, c)));
 			Link ad = links.get(links.indexOf(new Link(c, "aggregation_" + aggreDown)));
@@ -145,21 +148,37 @@ public class Network {
 			ps.add(p);
 		}
 
-		paths.put(o, ps);
+		paths.put(od, ps);
 		return ps;
 	}
 
 
-	public ArrayList<ArrayList<Link>> getPaths(ODPair o) {
-		if(paths.containsKey(o)) {
-			return paths.get(o);
+	public ArrayList<ArrayList<Link>> getPaths(int source, int des) {
+		String od = source + "-" + des;
+		if (paths.containsKey(od)) {
+			return paths.get(od);
 		} else {
-			return createPaths(o);
+			return createPaths(source, des);
 		}
 	}
 
-	public Map<ODPair, ArrayList<ArrayList<Link>>> getPaths() {
+	public Map<String, ArrayList<ArrayList<Link>>> getAllPaths() {
 		return this.paths;
+	}
+
+	public double getPathMaxAvailableBandwidth(ArrayList<Link> path) {
+		double min = total_bandwidth;
+		for(int i = 0; i < path.size(); i++){
+			Link link = path.get(i);
+			if(min > linkFreeBandwidth.get(link)) {
+				min =  linkFreeBandwidth.get(link);
+			}
+		}
+		return min;
+	}
+
+	public void setLinkBandwidth(Link link, double bandwidth) {
+		linkFreeBandwidth.put(link, bandwidth);
 	}
 
 	public ArrayList<ArrayList<String>> getPods() {
@@ -170,12 +189,12 @@ public class Network {
 		return this.edge;
 	}
 
-	public ArrayList<ODPair> getOds() {
-		return this.ods;
+	public ArrayList<String> getCore() {
+		return this.core;
 	}
 
-	public Double getBandwidth(Link link) {
-		return this.linkBandwidth.get(link);
+	public Double getFreeBandwidth(Link link) {
+		return this.linkFreeBandwidth.get(link);
 	}
 
 	public ArrayList<String> getServers() {

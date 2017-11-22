@@ -45,6 +45,14 @@ public class Constants {
     DARK,
   }
 
+  public enum ROUTING_ALGO {
+    NONE,
+    ECMP,
+    HEDERA,
+    RAPIER,
+    OURS,
+  }
+
   /**
    * For floating-point comparisons.
    */
