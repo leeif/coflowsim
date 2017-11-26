@@ -49,12 +49,16 @@ public class CoflowBenchmarkTraceProducer extends TraceProducer {
 
   private String pathToCoflowBenchmarkTraceFile;
 
+  private Constants.ROUTING_ALGO routingAlgo;
+
   /**
    * @param pathToCoflowBenchmarkTraceFile
    *          Path to the file containing the trace.
    */
-  public CoflowBenchmarkTraceProducer(String pathToCoflowBenchmarkTraceFile) {
+  public CoflowBenchmarkTraceProducer(String pathToCoflowBenchmarkTraceFile,
+                                      Constants.ROUTING_ALGO routingAlgo) {
     this.pathToCoflowBenchmarkTraceFile = pathToCoflowBenchmarkTraceFile;
+    this.routingAlgo = routingAlgo;
   }
 
   /**
@@ -92,7 +96,7 @@ public class CoflowBenchmarkTraceProducer extends TraceProducer {
         int lIndex = 0;
 
         String jobName = "JOB-" + splits[lIndex++];
-        Job job = jobs.getOrAddJob(jobName);
+        Job job = jobs.getOrAddJob(jobName, routingAlgo);
 
         int jobArrivalTime = Integer.parseInt(splits[lIndex++]);
 

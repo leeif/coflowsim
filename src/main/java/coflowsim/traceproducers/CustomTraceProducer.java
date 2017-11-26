@@ -44,6 +44,8 @@ public class CustomTraceProducer extends TraceProducer {
 
 	private final Random ranGen;
 
+	private Constants.ROUTING_ALGO routingAlgo;
+
 	/**
 	 * Constructor and input validator.
 	 *
@@ -60,6 +62,7 @@ public class CustomTraceProducer extends TraceProducer {
 					JobClassDescription[] jobClassDescs,
 					double[] fracsOfClasses,
 					int randomSeed,
+					Constants.ROUTING_ALGO routingAlgo,
 					Network network) {
 
 		ranGen = new Random(randomSeed);
@@ -74,6 +77,7 @@ public class CustomTraceProducer extends TraceProducer {
 		this.NUM_RACKS = numRacks;
 		this.MACHINES_PER_RACK = network.getPods().get(0).size();
 		System.out.println(NUM_RACKS + "  " + MACHINES_PER_RACK);
+		this.routingAlgo = routingAlgo;
 
 		// Check input validity
 		assert (jobClassDescs.length == numJobClasses);
@@ -96,7 +100,7 @@ public class CustomTraceProducer extends TraceProducer {
 				// Find corresponding job
 				String jobName = "JOB-" + jID;
 				jID++;
-				Job job = jobs.getOrAddJob(jobName);
+				Job job = jobs.getOrAddJob(jobName, routingAlgo);
 
 				// #region: Create mappers
 				int numMappers = ranGen.nextInt(jobClass[i].maxWidth - jobClass[i].minWidth + 1)

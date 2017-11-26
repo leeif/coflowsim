@@ -8,7 +8,7 @@ import coflowsim.utils.Utils;
 import java.util.*;
 
 /**
- *  Simulated Annealing Simulator based on Simulated Annealing Methods
+ * Simulated Annealing Simulator based on Simulated Annealing Methods
  */
 public class SASimulator extends Simulator {
 
@@ -18,7 +18,6 @@ public class SASimulator extends Simulator {
 
 	private Map<Integer, ArrayList<Link>> pathForFlow;
 	private Map<Integer, Integer> pathIndexForFlow;
-	private Map<Link, Double> bandwidthForLink;
 
 	private Vector<Vector<Flow>> flowsInPathOfRacks[];
 
@@ -58,11 +57,6 @@ public class SASimulator extends Simulator {
 		this.pathForFlow = new HashMap<Integer, ArrayList<Link>>();
 		// Initialize Path Index For Flow
 		this.pathIndexForFlow = new HashMap<Integer, Integer>();
-		this.bandwidthForLink = new HashMap<Link, Double>();
-	}
-
-	protected void resetTempLinkBandwidth() {
-
 	}
 
 	/**
@@ -70,12 +64,6 @@ public class SASimulator extends Simulator {
 	 */
 	@Override
 	protected boolean admitThisJob(Job j) {
-		if (considerDeadline) {
-			updateRatesDynamicAlpha(Constants.VALUE_UNKNOWN, true);
-			double currentAlpha = calcAlphaOnline(j);
-			if (currentAlpha == Constants.VALUE_UNKNOWN || currentAlpha > j.deadlineDuration / 1000.0)
-				return false;
-		}
 		return true;
 	}
 
@@ -108,22 +96,6 @@ public class SASimulator extends Simulator {
 	protected void afterJobAdmission(long curTime) {
 		layoutFlowsInJobOrder();
 		updateRatesDynamicAlpha(curTime, false);
-//		for (int i = 0; i < sortedJobs.size(); i++) {
-//			Job j = sortedJobs.get(i);
-//			System.out.println("----------- Task " + j.jobName  + "--------------");
-//
-//			for (Task task : j.tasks) {
-//				if (task.taskType == TaskType.REDUCER) {
-//					ReduceTask rt = (ReduceTask) task;
-//					System.out.println("----------- Task " + rt.taskName  + "--------------");
-//					for (Flow flow : rt.flows) {
-//						System.out.println(flow.currentBps);
-//					}
-//					System.out.println("-------------------------");
-//				}
-//			}
-//			System.out.println("-------------------------");
-//		}
 	}
 
 	/**
@@ -142,6 +114,98 @@ public class SASimulator extends Simulator {
 		updateRatesDynamicAlpha(curTime, false);
 	}
 
+	/**
+	 * @param temperature: Iteration of Simulated Annealing
+	 */
+	private State SA(int temperature, final long curTime, boolean trialRun) {
+		State s = initState();
+		double e = energy(s, curTime, trialRun);
+		State sb = s;
+		double eb = e;
+		for (int i = 0; i < temperature; i++) {
+			State sn = neighbour(s);
+			double en = energy(sn, curTime, trialRun);
+			if (en < eb) {
+				sb = sn;
+				eb = en;
+			}
+			Random ranGen = new Random();
+			if (P(e, en, i, temperature) > ranGen.nextDouble()) {
+				s = sn;
+				e = en;
+			}
+		}
+
+		return sb;
+	}
+
+	private double P(double EN, double E, int T, int temperature) {
+		int c = 1000 * temperature;
+		if (EN < E) {
+			return 1.0;
+		} else {
+			return Math.pow(Math.E, c * (E - EN) / T);
+		}
+	}
+
+	/**
+	 * init state of Simulated Annealing
+	 */
+	public State initState() {
+		Map<Integer, Integer> coreMapping = new HashMap<Integer, Integer>();
+		for (int i = 0; i < network.getServers().size(); i++) {
+			coreMapping.put(i, i % network.getCore().size());
+		}
+		return new State(coreMapping, -1, -1, -1.0, -1.0);
+	}
+
+	/**
+	 * Energy Function of Simulated Annealing
+	 *
+	 * @return
+	 */
+	private double energy(State s, final long curTime, boolean trialRun) {
+		double a = 0.0;
+		if (s.swap1 == -1 || s.swap2 == -1) {
+			// For keeping track of jobs with invalid currentAlpha
+			Vector<Job> skippedJobs = new Vector<Job>();
+			for (Job sj : jobs) {
+				double onlineAphla = calcAlphaOnline(sj, s.coreMapping);
+				if (onlineAphla == Constants.VALUE_UNKNOWN) {
+					skippedJobs.add(sj);
+					continue;
+				} else {
+					sj.alpha = onlineAphla;
+					a += onlineAphla;
+//					System.out.println(onlineAphla);
+				}
+				// Use deadline instead of alpha when considering deadlines
+				if (considerDeadline) {
+					onlineAphla = sj.deadlineDuration / 1000;
+				}
+				updateRatesDynamicAlphaOneJob(sj, onlineAphla, trialRun);
+			}
+		} else {
+
+		}
+		return a;
+	}
+
+	/**
+	 * Neighbour Function
+	 */
+	private State neighbour(State s) {
+		Random rangen = new Random();
+		int swap1 = rangen.nextInt(network.getCore().size());
+		int swap2;
+		while ((swap2 = rangen.nextInt(network.getCore().size())) == swap1) ;
+		Map<Integer, Integer> coreMapping = s.coreMapping;
+		int temp = coreMapping.get(swap1);
+		coreMapping.put(swap1, coreMapping.get(swap2));
+		coreMapping.put(swap2, temp);
+		return new State(coreMapping, swap1, swap2, -1.0, s.currentEnergy);
+	}
+
 
 	/**
 	 * Update rates of flows for each coflow using a dynamic alpha, calculated based on remaining
@@ -151,6 +215,11 @@ public class SASimulator extends Simulator {
 	 * @param trialRun if true, do NOT change any jobs allocations
 	 */
 	private void updateRatesDynamicAlpha(final long curTime, boolean trialRun) {
+		// Reset sendBpsFree and recvBpsFree
+		network.resetBandWidthForLink();
+
+		State sb = SA(100, curTime, trialRun);
+
 		// Reset sendBpsFree and recvBpsFree
 		network.resetBandWidthForLink();
 
@@ -169,7 +238,7 @@ public class SASimulator extends Simulator {
 				}
 			}
 
-			double currentAlpha = calcAlphaOnline(sj);
+			double currentAlpha = calcAlphaOnline(sj, sb.coreMapping);
 			if (currentAlpha == Constants.VALUE_UNKNOWN) {
 				skippedJobs.add(sj);
 				continue;
@@ -182,62 +251,62 @@ public class SASimulator extends Simulator {
 			updateRatesDynamicAlphaOneJob(sj, currentAlpha, trialRun);
 		}
 
-		// Work conservation
-		if (!trialRun) {
-			updateRatesFairShare(skippedJobs);
-
-			// Heuristic: Sort coflows by EDF and then refill
-			// If there is no deadline, this simply sorts them by arrival time
-			Vector<Job> sortedByEDF = new Vector<Job>(sortedJobs);
-			Collections.sort(sortedByEDF, new Comparator<Job>() {
-				public int compare(Job o1, Job o2) {
-					int timeLeft1 = (int) (o1.simulatedStartTime + o1.deadlineDuration - curTime);
-					int timeLeft2 = (int) (o2.simulatedStartTime + o2.deadlineDuration - curTime);
-					return timeLeft1 - timeLeft2;
-				}
-			});
-
-			for (Job sj : sortedByEDF) {
-				for (Task t : sj.tasks) {
-					if (t.taskType != Task.TaskType.REDUCER) {
-						continue;
-					}
-
-					ReduceTask rt = (ReduceTask) t;
-					int dst = rt.taskID;
-					boolean flag = false;
-					for (Flow f : rt.flows) {
-						ArrayList<Link> path = pathForFlow.get(f.id);
-						if (network.getFreeBandwidth(path.get(1)) <= Constants.ZERO) {
-							flag = true;
-							break;
-						}
-					}
-
-					if (flag) {
-						continue;
-					}
-
-					for (Flow f : rt.flows) {
-						int src = f.mapper.taskID;
-						ArrayList<Link> path = pathForFlow.get(f.id);
-						double sendBpsFree = network.getFreeBandwidth(path.get(0));
-						double recvBpsFree = network.getFreeBandwidth(path.get(1));
-						double minFree = Math.min(sendBpsFree, recvBpsFree);
-						if (minFree <= Constants.ZERO) minFree = 0.0;
-
-						f.currentBps += minFree;
-						// Remove how much capacity was allocated from link
-						network.setLinkBandwidth(path.get(0), sendBpsFree - minFree);
-						network.setLinkBandwidth(path.get(1), recvBpsFree - minFree);
-					}
-				}
-			}
-		}
+//		// Work conservation
+//		if (!trialRun) {
+//			updateRatesFairShare(skippedJobs);
+//
+//			// Heuristic: Sort coflows by EDF and then refill
+//			// If there is no deadline, this simply sorts them by arrival time
+//			Vector<Job> sortedByEDF = new Vector<Job>(sortedJobs);
+//			Collections.sort(sortedByEDF, new Comparator<Job>() {
+//				public int compare(Job o1, Job o2) {
+//					int timeLeft1 = (int) (o1.simulatedStartTime + o1.deadlineDuration - curTime);
+//					int timeLeft2 = (int) (o2.simulatedStartTime + o2.deadlineDuration - curTime);
+//					return timeLeft1 - timeLeft2;
+//				}
+//			});
+//
+//			for (Job sj : sortedByEDF) {
+//				for (Task t : sj.tasks) {
+//					if (t.taskType != Task.TaskType.REDUCER) {
+//						continue;
+//					}
+//
+//					ReduceTask rt = (ReduceTask) t;
+//					int dst = rt.taskID;
+//					boolean flag = false;
+//					for (Flow f : rt.flows) {
+//						ArrayList<Link> path = pathForFlow.get(f.id);
+//						if (network.getFreeBandwidth(path.get(1)) <= Constants.ZERO) {
+//							flag = true;
+//							break;
+//						}
+//					}
+//
+//					if (flag) {
+//						continue;
+//					}
+//
+//					for (Flow f : rt.flows) {
+//						int src = f.mapper.taskID;
+//						ArrayList<Link> path = pathForFlow.get(f.id);
+//						double sendBpsFree = network.getFreeBandwidth(path.get(0));
+//						double recvBpsFree = network.getFreeBandwidth(path.get(1));
+//						double minFree = Math.min(sendBpsFree, recvBpsFree);
+//						if (minFree <= Constants.ZERO) minFree = 0.0;
+//
+//						f.currentBps += minFree;
+//						// Remove how much capacity was allocated from link
+//						network.setLinkBandwidth(path.get(0), sendBpsFree - minFree);
+//						network.setLinkBandwidth(path.get(1), recvBpsFree - minFree);
+//					}
+//				}
+//			}
+//		}
 	}
 
 
-	private double calcAlphaOnline(Job job) {
+	private double calcAlphaOnline(Job job, Map<Integer, Integer> coreMapping) {
 		double[][] sendBytes = new double[NUM_RACKS][network.getCore().size()];
 		double[][] recvBytes = new double[NUM_RACKS][network.getCore().size()];
 
@@ -245,7 +314,10 @@ public class SASimulator extends Simulator {
 			if (t.taskType == Task.TaskType.REDUCER) {
 				ReduceTask rt = (ReduceTask) t;
 				for (Flow f : rt.flows) {
-					int pathIndex = choosePath(f);
+					int machineID = f.mapper.assignedMachine.machineID;
+					int pathIndex = coreMapping.get(machineID);
+					pathForFlow.put(f.id, network.getPaths(f.mapper.taskID, rt.taskID).get(pathIndex));
+					pathIndexForFlow.put(f.id, pathIndex);
 					sendBytes[f.mapper.taskID][pathIndex] += f.bytesRemaining;
 					recvBytes[rt.taskID][pathIndex] += f.bytesRemaining;
 				}
@@ -270,32 +342,6 @@ public class SASimulator extends Simulator {
 		}
 
 		return Math.max(Utils.max(sendBytes), Utils.max(recvBytes));
-	}
-
-	private int choosePath(Flow flow) {
-		ArrayList<ArrayList<Link>> paths = network.getPaths(flow.mapper.taskID, flow.reducer.taskID);
-		int pathIndex = -1;
-		double mfb = -1;
-		for (int i = 0; i < paths.size(); i++) {
-			ArrayList<Link> path = paths.get(i);
-			double maxFree = Math.min(network.getFreeBandwidth(path.get(0)),
-							network.getFreeBandwidth(path.get(1)));
-			if (maxFree > mfb) {
-				pathIndex = i;
-				mfb = maxFree;
-			}
-		}
-		if (pathIndex == -1) {
-			Random random = new Random();
-			pathIndex = random.nextInt(network.getCore().size());
-		}
-
-		flowsInPathOfRacks[flow.mapper.taskID].get(pathIndex).add(flow);
-
-		// Add flow to path
-		pathForFlow.put(flow.id, paths.get(pathIndex));
-		pathIndexForFlow.put(flow.id, pathIndex);
-		return pathIndex;
 	}
 
 	/**
@@ -610,4 +656,33 @@ public class SASimulator extends Simulator {
 			return o1.alpha < o2.alpha ? -1 : 1;
 		}
 	};
+
+	/**
+	 * State Object For Simulated Annealing
+	 */
+	private class State {
+
+		/**
+		 * First Integer : Machine Server Id
+		 * Second Integer : Core Switch Id
+		 */
+		public Map<Integer, Integer> coreMapping;
+		public int swap1;
+		public int swap2;
+		public double currentEnergy;
+		public double lastEnergy;
+
+
+		public State(Map<Integer, Integer> cm, int swap1, int swap2,
+								 double currentEnergy, double lastEnergy) {
+			this.coreMapping = new HashMap<Integer, Integer>();
+			for(Integer key : cm.keySet()) {
+				this.coreMapping.put(key, cm.get(key));
+			}
+			this.swap1 = swap1;
+			this.swap2 = swap2;
+			this.currentEnergy = currentEnergy;
+			this.lastEnergy = lastEnergy;
+		}
+	}
 }

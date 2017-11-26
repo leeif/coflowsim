@@ -3,10 +3,10 @@ package coflowsim.simulators;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
-
 import coflowsim.datastructures.Flow;
 import coflowsim.datastructures.Job;
 import coflowsim.datastructures.JobCollection;
+import coflowsim.datastructures.Task;
 import coflowsim.traceproducers.TraceProducer;
 import coflowsim.utils.Constants;
 import coflowsim.utils.Constants.SHARING_ALGO;

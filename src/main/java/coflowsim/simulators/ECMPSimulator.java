@@ -117,7 +117,7 @@ public class ECMPSimulator extends Simulator {
 	 */
 	private int ECMP() {
 		Random random = new Random();
-		int pathIndex = random.nextInt(network.getCore().size());
+		int pathIndex = random.nextInt(network.getCore().size() / 4);
 		return pathIndex;
 	}
 

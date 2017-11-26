@@ -4,7 +4,7 @@ package coflowsim.datastructures;
  * Information of each machine.
  */
 public class Machine {
-  int machineID;
+  public int machineID;
 
   /**
    * Constructor for Machine.

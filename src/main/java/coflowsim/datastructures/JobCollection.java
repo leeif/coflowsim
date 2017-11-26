@@ -1,5 +1,7 @@
 package coflowsim.datastructures;
 
+import coflowsim.utils.Constants;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,11 +32,11 @@ public class JobCollection implements Iterable<Job> {
    * 
    * @return a reference to the {@link coflowsim.datastructures.Job} with the given name.
    */
-  public Job getOrAddJob(String jobName) {
+  public Job getOrAddJob(String jobName, Constants.ROUTING_ALGO routingAlgo) {
     if (hashOfJobs.containsKey(jobName)) {
       return hashOfJobs.get(jobName);
     } else {
-      Job job = new Job(jobName, listOfJobs.size());
+      Job job = new Job(jobName, listOfJobs.size(), routingAlgo);
 
       hashOfJobs.put(jobName, job);
       listOfJobs.add(job);

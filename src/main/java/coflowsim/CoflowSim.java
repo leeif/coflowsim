@@ -86,7 +86,7 @@ public class CoflowSim {
 						21};
 
 		traceProducer = new CustomTraceProducer(numRacks, numJobs, jobClassDescs, fracsOfClasses,
-						randomSeed, network);
+						randomSeed, routingAlgo, network);
 
 		if (args.length > curArg) {
 			String UPPER_ARG = args[curArg++].toUpperCase();
@@ -114,16 +114,19 @@ public class CoflowSim {
 				randomSeed = Integer.parseInt(args[curArg++]);
 
 				traceProducer = new CustomTraceProducer(numRacks, numJobs, jobClassDescs, fracsOfClasses,
-								randomSeed, network);
+								randomSeed, routingAlgo, network);
 			} else if (UPPER_ARG.equals("COFLOW-BENCHMARK")) {
 				String pathToCoflowBenchmarkTraceFile = args[curArg++];
-				traceProducer = new CoflowBenchmarkTraceProducer(pathToCoflowBenchmarkTraceFile);
+				traceProducer = new CoflowBenchmarkTraceProducer(pathToCoflowBenchmarkTraceFile, routingAlgo);
 			}
 		}
 		traceProducer.prepareTrace();
 
 		Simulator nlpl = null;
-		if (routingAlgo == ROUTING_ALGO.ECMP) {
+		if (routingAlgo == ROUTING_ALGO.SA) {
+			nlpl = new SASimulator(routingAlgo, traceProducer, isOffline, considerDeadline,
+							deadlineMultRandomFactor, network);
+		} else if (routingAlgo == ROUTING_ALGO.ECMP) {
 			nlpl = new ECMPSimulator(null, traceProducer, isOffline, considerDeadline,
 							deadlineMultRandomFactor, network);
 		} else if (routingAlgo == ROUTING_ALGO.HEDERA) {
